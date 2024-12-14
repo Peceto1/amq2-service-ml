@@ -44,7 +44,6 @@ def process_etl_weatherAUS_data():
         Load the raw data from UCI repository
         """
         import awswrangler as wr
-        from airflow.models import Variable
         import pandas as pd
 
         # fetch dataset
@@ -78,7 +77,6 @@ def process_etl_weatherAUS_data():
         import mlflow
 
         import awswrangler as wr
-        import pandas as pd
         import numpy as np
 
         from airflow.models import Variable

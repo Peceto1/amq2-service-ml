@@ -6,12 +6,12 @@ import mlflow
 import numpy as np
 import pandas as pd
 
-from typing import Literal
 from fastapi import FastAPI, Body, BackgroundTasks
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel, Field
+
 from typing_extensions import Annotated
+from .utils.data_preprocessing import data_cleaning,feature_encodings
 
 
 def load_model(model_name: str, alias: str):
@@ -77,7 +77,7 @@ def check_model():
     global version_model
 
     try:
-        model_name = "heart_disease_model_prod"
+        model_name = "weather_model_prod"
         alias = "champion"
 
         mlflow.set_tracking_uri('http://mlflow:5000')
@@ -97,133 +97,157 @@ def check_model():
         pass
 
 
+
+from pydantic import BaseModel, Field
+from typing import Literal
+
 class ModelInput(BaseModel):
     """
-    Input schema for the heart disease prediction model.
+    Input schema for the Rain in Australia prediction model.
 
-    This class defines the input fields required by the heart disease prediction model along with their descriptions
-    and validation constraints.
+    This class defines the input fields required for the prediction model based on the dataset attributes, including
+    descriptions and validation constraints.
 
-    :param age: Age of the patient (0 to 150).
-    :param sex: Sex of the patient. 1: male; 0: female.
-    :param cp: Chest pain type. 1: typical angina; 2: atypical angina; 3: non-anginal pain; 4: asymptomatic.
-    :param trestbps: Resting blood pressure in mm Hg on admission to the hospital (90 to 220).
-    :param chol: Serum cholestoral in mg/dl (110 to 600).
-    :param fbs: Fasting blood sugar. 1: >120 mg/dl; 0: <120 mg/dl.
-    :param restecg: Resting electrocardiographic results. 0: normal; 1: having ST-T wave abnormality; 2: showing
-                    probable or definite left ventricular hypertrophy.
-    :param thalach: Maximum heart rate achieved (beats per minute) (50 to 210).
-    :param exang: Exercise induced angina. 1: yes; 0: no.
-    :param oldpeak: ST depression induced by exercise relative to rest (0.0 to 7.0).
-    :param slope: The slope of the peak exercise ST segment. 1: upsloping; 2: flat; 3: downsloping.
-    :param ca: Number of major vessels colored by flourosopy (0 to 3).
-    :param thal: Thalassemia disease. 3: normal; 6: fixed defect; 7: reversable defect.
+    :param MinTemp: Minimum temperature (in degrees Celsius).
+    :param MaxTemp: Maximum temperature (in degrees Celsius).
+    :param Rainfall: Rainfall amount (in mm).
+    :param WindGustSpeed: Speed of the strongest wind gust (in km/h).
+    :param WindSpeed9am: Wind speed at 9am (in km/h).
+    :param WindSpeed3pm: Wind speed at 3pm (in km/h).
+    :param Humidity9am: Humidity at 9am (in percentage).
+    :param Humidity3pm: Humidity at 3pm (in percentage).
+    :param Pressure3pm: Atmospheric pressure at 3pm (in hPa).
+    :param RainToday: Indicates if it rained today. 1: Yes; 0: No.
+    :param latitude: Latitude of the location.
+    :param longitude: Longitude of the location.
+    :param WindGustDir: Direction of the strongest wind gust (categorical).
+    :param WindDir9am: Wind direction at 9am (categorical).
+    :param WindDir3pm: Wind direction at 3pm (categorical).
+    :param Date: Date in the format yyyy-mm-dd.
     """
 
-    age: int = Field(
-        description="Age of the patient",
-        ge=0,
-        le=150,
+    MinTemp: float = Field(
+        description="Minimum temperature (in degrees Celsius)",
+        ge=-50.0,  # Adjust based on dataset range
+        le=50.0
     )
-    sex: int = Field(
-        description="Sex of the patient. 1: male; 0: female",
-        ge=0,
-        le=1,
+    MaxTemp: float = Field(
+        description="Maximum temperature (in degrees Celsius)",
+        ge=-50.0,
+        le=60.0
     )
-    cp: int = Field(
-        description="Chest pain type. 1: typical angina; 2: atypical angina, 3: non-anginal pain; 4: asymptomatic",
-        ge=1,
-        le=4,
-    )
-    trestbps: float = Field(
-        description="Resting blood pressure in mm Hg on admission to the hospital",
-        ge=90,
-        le=220,
-    )
-    chol: float = Field(
-        description="Serum cholestoral in mg/dl",
-        ge=110,
-        le=600,
-    )
-    fbs: int = Field(
-        description="Fasting blood sugar. 1: >120 mg/dl; 0: <120 mg/dl",
-        ge=0,
-        le=1,
-    )
-    restecg: int = Field(
-        description="Resting electrocardiographic results. 0: normal; 1:  having ST-T wave abnormality (T wave "
-                    "inversions and/or ST elevation or depression of > 0.05 mV), 2: showing probable or definite "
-                    "left ventricular hypertrophy by Estes' criteria",
-        ge=0,
-        le=2,
-    )
-    thalach: float = Field(
-        description="Maximum heart rate achieved (beats per minute)",
-        ge=50,
-        le=210,
-    )
-    exang: int = Field(
-        description="Exercise induced angina. 1: yes; 0: no",
-        ge=0,
-        le=1,
-    )
-    oldpeak: float = Field(
-        description="ST depression induced by exercise relative to rest",
+    Rainfall: float = Field(
+        description="Rainfall amount (in mm)",
         ge=0.0,
-        le=7.0,
+        le=500.0
     )
-    slope: int = Field(
-        description="The slope of the peak exercise ST segment .1: upsloping; 2: flat, 3: downsloping",
-        ge=1,
-        le=3,
+    WindGustSpeed: float = Field(
+        description="Speed of the strongest wind gust (in km/h)",
+        ge=0.0,
+        le=150.0
     )
-    ca: int = Field(
-        description="Number of major vessels colored by flourosopy",
+    WindSpeed9am: float = Field(
+        description="Wind speed at 9am (in km/h)",
+        ge=0.0,
+        le=100.0
+    )
+    WindSpeed3pm: float = Field(
+        description="Wind speed at 3pm (in km/h)",
+        ge=0.0,
+        le=100.0
+    )
+    Humidity9am: float = Field(
+        description="Humidity at 9am (in percentage)",
+        ge=0.0,
+        le=100.0
+    )
+    Humidity3pm: float = Field(
+        description="Humidity at 3pm (in percentage)",
+        ge=0.0,
+        le=100.0
+    )
+    Pressure3pm: float = Field(
+        description="Atmospheric pressure at 3pm (in hPa)",
+        ge=800.0,
+        le=1100.0
+    )
+    RainToday: int = Field(
+        description="Indicates if it rained today. 1: Yes; 0: No",
         ge=0,
-        le=3,
+        le=1
     )
-    thal: Literal[3, 6, 7] = Field(
-        description="Thalassemia disease. 3: normal; 6: fixed defect; 7: reversable defect",
+    latitude: float = Field(
+        description="Latitude of the location",
+        ge=-90.0,
+        le=90.0
+    )
+    longitude: float = Field(
+        description="Longitude of the location",
+        ge=-180.0,
+        le=180.0
+    )
+    WindGustDir: Literal[
+        'N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'
+    ] = Field(
+        description="Direction of the strongest wind gust (categorical)"
+    )
+    WindDir9am: Literal[
+        'N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'
+    ] = Field(
+        description="Wind direction at 9am (categorical)"
+    )
+    WindDir3pm: Literal[
+        'N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'
+    ] = Field(
+        description="Wind direction at 3pm (categorical)"
+    )
+    Date: str = Field(
+        description="Date in the format yyyy-mm-dd",
+        regex="^\\d{4}-\\d{2}-\\d{2}$"
     )
 
     model_config = {
         "json_schema_extra": {
             "examples": [
                 {
-                    "age": 67,
-                    "sex": 1,
-                    "cp": 4,
-                    "trestbps": 160.0,
-                    "chol": 286.0,
-                    "fbs": 0,
-                    "restecg": 2,
-                    "thalach": 108.0,
-                    "exang": 1,
-                    "oldpeak": 1.5,
-                    "slope": 2,
-                    "ca": 3,
-                    "thal": 3,
+                    "MinTemp": 12.3,
+                    "MaxTemp": 25.6,
+                    "Rainfall": 0.0,
+                    "WindGustSpeed": 45.0,
+                    "WindSpeed9am": 20.0,
+                    "WindSpeed3pm": 25.0,
+                    "Humidity9am": 75.0,
+                    "Humidity3pm": 60.0,
+                    "Pressure3pm": 1012.0,
+                    "RainToday": 0,
+                    "latitude": -33.8688,
+                    "longitude": 151.2093,
+                    "WindGustDir": "NE",
+                    "WindDir9am": "N",
+                    "WindDir3pm": "NW",
+                    "Date": "2023-05-12"
                 }
             ]
         }
     }
 
 
+
 class ModelOutput(BaseModel):
     """
-    Output schema for the heart disease prediction model.
+    Output schema for the Weather in australio prediction model.
 
-    This class defines the output fields returned by the heart disease prediction model along with their descriptions
+    This class defines the output fields returned by the weather prediction model along with their descriptions
     and possible values.
 
-    :param int_output: Output of the model. True if the patient has a heart disease.
-    :param str_output: Output of the model in string form. Can be "Healthy patient" or "Heart disease detected".
+    :param int_output: Output of the model. True if it will rain tomorrow.
+    :param str_output: Output of the model in string form. Can be "It will Rain" or "It will not Rain".
     """
 
     int_output: bool = Field(
-        description="Output of the model. True if the patient has a heart disease",
+        description="Output of the model.  True if it will rain tomorrow",
     )
-    str_output: Literal["Healthy patient", "Heart disease detected"] = Field(
+    str_output: Literal["It will Rain", "It will not Rain"] = Field(
         description="Output of the model in string form",
     )
 
@@ -232,7 +256,7 @@ class ModelOutput(BaseModel):
             "examples": [
                 {
                     "int_output": True,
-                    "str_output": "Heart disease detected",
+                    "str_output": "It will Rain",
                 }
             ]
         }
@@ -240,7 +264,7 @@ class ModelOutput(BaseModel):
 
 
 # Load the model before start
-model, version_model, data_dict = load_model("heart_disease_model_prod", "champion")
+model, version_model, data_dict = load_model("weather_model_prod", "champion")
 
 app = FastAPI()
 
@@ -248,11 +272,11 @@ app = FastAPI()
 @app.get("/")
 async def read_root():
     """
-    Root endpoint of the Heart Disease Detector API.
+    Root endpoint of the Rain in Australia Detector API.
 
     This endpoint returns a JSON response with a welcome message to indicate that the API is running.
     """
-    return JSONResponse(content=jsonable_encoder({"message": "Welcome to the Heart Disease Detector API"}))
+    return JSONResponse(content=jsonable_encoder({"message": "Welcome to the Rain In Australia API"}))
 
 
 @app.post("/predict/", response_model=ModelOutput)
@@ -264,10 +288,10 @@ def predict(
     background_tasks: BackgroundTasks
 ):
     """
-    Endpoint for predicting heart disease.
+    Endpoint for predicting if it will rain.
 
-    This endpoint receives features related to a patient's health and predicts whether the patient has heart disease
-    or not using a trained model. It returns the prediction result in both integer and string formats.
+    This endpoint receives features related to a weather variables on a certain date and predicts whether the it will rain in
+    that location the next day or not using a trained model. It returns the prediction result in both integer and string formats.
     """
 
     # Extract features from the request and convert them into a list and dictionary
@@ -277,30 +301,20 @@ def predict(
     # Convert features into a pandas DataFrame
     features_df = pd.DataFrame(np.array(features_list).reshape([1, -1]), columns=features_key)
 
-    # Process categorical features
-    for categorical_col in data_dict["categorical_columns"]:
-        features_df[categorical_col] = features_df[categorical_col].astype(int)
-        categories = data_dict["categories_values_per_categorical"][categorical_col]
-        features_df[categorical_col] = pd.Categorical(features_df[categorical_col], categories=categories)
+    features_df =   data_cleaning(features_df)
 
-    # Convert categorical features into dummy variables
-    features_df = pd.get_dummies(data=features_df,
-                                 columns=data_dict["categorical_columns"],
-                                 drop_first=True)
+    features_df = feature_encodings(features_df)
 
-    # Reorder DataFrame columns
-    features_df = features_df[data_dict["columns_after_dummy"]]
-
-    # Scale the data using standard scaler
     features_df = (features_df-data_dict["standard_scaler_mean"])/data_dict["standard_scaler_std"]
+
 
     # Make the prediction using the trained model
     prediction = model.predict(features_df)
 
     # Convert prediction result into string format
-    str_pred = "Healthy patient"
+    str_pred = "It Will not Rain"
     if prediction[0] > 0:
-        str_pred = "Heart disease detected"
+        str_pred = "It Will Rain"
 
     # Check if the model has changed asynchronously
     background_tasks.add_task(check_model)

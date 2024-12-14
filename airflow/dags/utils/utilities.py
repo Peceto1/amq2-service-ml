@@ -81,20 +81,6 @@ def load_geocode_results(filename='geocode_results.csv'):
                                                    'longitude': float(row['longitude']) if row['longitude'] else None}
     print(f"Geocode results loaded from {filename}")
     return geocode_results_loaded
-from six import StringIO
-from IPython.display import Image, display
-import pydotplus
-import sklearn
-
-def dibujar_arbol(modelo,target_names,feature_names):
-    dot_data = StringIO()
-    sklearn.tree.export_graphviz(modelo, out_file=dot_data,
-                    filled=True,
-                    class_names = target_names,
-                    feature_names=feature_names,
-                    special_characters=True)
-    graph = pydotplus.graph_from_dot_data(dot_data.getvalue())
-    display(Image(graph.create_png()))
 
 
 

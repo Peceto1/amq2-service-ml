@@ -45,9 +45,21 @@ def process_etl_weatherAUS_data():
         """
         import awswrangler as wr
         import pandas as pd
+        from pathlib import Path
+        import os
 
+        # Determine the path to the 'weatherAUS.csv' file
+        airflow_dag_path = Path(os.environ.get('AIRFLOW_HOME', '/opt/airflow')) / 'dags'
+        file_path = airflow_dag_path / 'weatherAUS.csv'
+
+        # Verify that the file exists
+        if not file_path.exists():
+            raise FileNotFoundError(f"File not found: {file_path}")
+
+        # Load the CSV data
+        weather_df = pd.read_csv(file_path, on_bad_lines='skip')
         # fetch dataset
-        weather_df = pd.read_csv('weatherAUS.csv', on_bad_lines='skip')
+        # weather_df = pd.read_csv('weatherAUS.csv', on_bad_lines='skip')
 
         data_path = "s3://data/raw/weatherAUS.csv"
         dataframe = weather_df
@@ -80,7 +92,7 @@ def process_etl_weatherAUS_data():
         import numpy as np
 
         from airflow.models import Variable
-        from .utils.data_preprocessing import data_cleaning,feature_encodings
+        from utils.data_preprocessing import data_cleaning,feature_encodings
 
         data_original_path = "s3://data/raw/weatherAUS.csv"
         data_end_path = "s3://data/raw/weatherAUS_cleaned.csv"
@@ -179,7 +191,7 @@ def process_etl_weatherAUS_data():
                          path=path,
                          index=False)
 
-        data_original_path = "s3://data/raw/weatherAUS.csv"
+        data_original_path = "s3://data/raw/weatherAUS_cleaned.csv"
         dataset = wr.s3.read_csv(data_original_path)
 
         test_size = Variable.get("test_size_weather")
@@ -194,9 +206,16 @@ def process_etl_weatherAUS_data():
         dataset.drop_duplicates(inplace=True, ignore_index=True)
 
         save_to_csv(X_train, "s3://data/final/train/weather_X_train.csv")
+        print('saved X:train')
         save_to_csv(X_test, "s3://data/final/test/weather_X_test.csv")
+        print('saved X:test')
+
         save_to_csv(y_train, "s3://data/final/train/weather_y_train.csv")
+        print('saved y:train')
+
         save_to_csv(y_test, "s3://data/final/test/weather_y_test.csv")
+        print('saved Y:test')
+
 
     @task.virtualenv(
         task_id="normalize_numerical_weather_features",
@@ -224,6 +243,7 @@ def process_etl_weatherAUS_data():
                          path=path,
                          index=False)
 
+        print('reading inputs to normlize')
         X_train = wr.s3.read_csv("s3://data/final/train/weather_X_train.csv")
         X_test = wr.s3.read_csv("s3://data/final/test/weather_X_test.csv")
 
@@ -234,8 +254,12 @@ def process_etl_weatherAUS_data():
         X_train = pd.DataFrame(X_train_arr, columns=X_train.columns)
         X_test = pd.DataFrame(X_test_arr, columns=X_test.columns)
 
+        print('normalized')
+
         save_to_csv(X_train, "s3://data/final/train/weather_X_train.csv")
+        print('saved normalizerd x_train')
         save_to_csv(X_test, "s3://data/final/test/weather_X_test.csv")
+        print('saved normalizerd x_test')
 
         # Save information of the dataset
         client = boto3.client('s3')

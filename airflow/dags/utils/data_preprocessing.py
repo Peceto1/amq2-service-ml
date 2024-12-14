@@ -77,7 +77,7 @@ def feature_encodings(weather_df_to_train):
 
 
     weather_df_to_train.dropna(inplace=True,axis=0,how='any')
-
+    print('dataframe final with encoded features')
     weather_df_to_train.head()
     return weather_df_to_train
 

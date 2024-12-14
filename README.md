@@ -1,10 +1,13 @@
-# Ejemplo de Implementación de un Modelo de Heart Disease 
-### AMq2 - CEIA - FIUBA
+# Ejemplo de Implementación de un Modelo de Rain In Australia 
+## AMq2 - CEIA - FIUBA
+### Integrantes
+- Juan Cruz Piñero
+- Julian Salas
 
-En este ejemplo, mostramos una implementación de un modelo productivo para detectar si un 
-paciente tiene una enfermedad cardiaca o no, utilizando el servicio de 
+En este ejemplo, mostramos una implementación de un modelo productivo para detectar si 
+el dia siguiente a una fecha determinada llueve o no, utilizando el servicio de 
 **ML Models and something more Inc.**. Para ello, obtenemos los datos de 
-[Heart Disease - UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/45/heart+disease).
+ [kaggle](https://www.kaggle.com/datasets/jsphyg/weather-dataset-rattle-package?resource=download).
 
 La implementación incluye:
 
@@ -30,21 +33,21 @@ Las flechas verdes y violetas representan nuevas conexiones en comparación con 
 El orden para probar el funcionamiento completo es el siguiente:
 
 1. Tan pronto como se levante el sistema multi-contenedor, ejecuta en Airflow el DAG 
-llamado `process_etl_heart_data`, de esta manera se crearán los datos en el 
+llamado `process_etl_weatherAUS_data`, de esta manera se crearán los datos en el 
 bucket `s3://data`.
 2. Ejecuta la notebook (ubicada en `notebook_example`) para realizar la búsqueda de 
 hiperparámetros y entrenar el mejor modelo.
 3. Utiliza el servicio de API.
 
-Además, una vez entrenado el modelo, puedes ejecutar el DAG `retrain_the_model` para probar 
+Además, una vez entrenado el modelo, puedes ejecutar el DAG `retrain_the_model_weather` para probar 
 un nuevo modelo que compita con el campeón. Antes de hacer esto, ejecuta el DAG 
-`process_etl_heart_data` para que el conjunto de datos sea nuevo, de lo contrario se entrenará 
+`process_etl_weatherAUS_data` para que el conjunto de datos sea nuevo, de lo contrario se entrenará 
 el mismo modelo. Este proceso siempre dará como resultado que el modelo inicial es mejor... 
 el motivo de esto se deja al lector para que comprenda lo que está sucediendo.
 
 ### API 
 
-Podemos realizar predicciones utilizando la API, accediendo a `http://localhost:8800/`.
+Podemos realizar predicciones utilizando la API, accediendo a `http://localhost:8801/`.
 
 Para hacer una predicción, debemos enviar una solicitud al endpoint `Predict` con un 
 cuerpo de tipo JSON que contenga un campo de características (`features`) con cada 
@@ -58,21 +61,24 @@ curl -X 'POST' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
-  "features": {
-    "age": 67,
-    "ca": 3,
-    "chol": 286,
-    "cp": 4,
-    "exang": 1,
-    "fbs": 0,
-    "oldpeak": 1.5,
-    "restecg": 2,
-    "sex": 1,
-    "slope": 2,
-    "thal": 3,
-    "thalach": 108,
-    "trestbps": 160
-  }
+  "features":         {
+            "MinTemp": 12.3,
+            "MaxTemp": 25.6,
+            "Rainfall": 0.0,
+            "WindGustSpeed": 45.0,
+            "WindSpeed9am": 20.0,
+            "WindSpeed3pm": 25.0,
+            "Humidity9am": 75.0,
+            "Humidity3pm": 60.0,
+            "Pressure3pm": 1012.0,
+            "RainToday": 0,
+            "latitude": -33.8688,
+            "longitude": 151.2093,
+            "WindGustDir": "NE",
+            "WindDir9am": "N",
+            "WindDir3pm": "NW",
+            "Date": "2023-05-12"
+        }
 }'
 ```
 
@@ -81,12 +87,12 @@ indicará si el paciente tiene o no una enfermedad cardiaca.
 
 ```json
 {
-  "int_output": true,
-  "str_output": "Heart disease detected"
+    "int_output": True,
+    "str_output": "It will Rain",
 }
 ```
 
-Para obtener más detalles sobre la API, ingresa a `http://localhost:8800/docs`.
+Para obtener más detalles sobre la API, ingresa a `http://localhost:8801/docs`.
 
 Nota: Recuerda que si esto se ejecuta en un servidor diferente a tu computadora, debes reemplazar 
 `localhost` por la IP correspondiente o el dominio DNS, si corresponde.

@@ -301,7 +301,6 @@ def predict(
     # Convert features into a pandas DataFrame
     features_df = pd.DataFrame(np.array(features_list).reshape([1, -1]), columns=features_key)
 
-    features_df =   data_cleaning(features_df)
 
     features_df = feature_encodings(features_df)
 

@@ -57,7 +57,7 @@ Un ejemplo utilizando `curl` sería:
 
 ```bash
 curl -X 'POST' \
-  'http://localhost:8800/predict/' \
+  'http://localhost:8801/predict/' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{

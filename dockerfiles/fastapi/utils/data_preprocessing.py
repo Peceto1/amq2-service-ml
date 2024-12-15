@@ -57,8 +57,6 @@ def feature_encodings(weather_df_to_train):
     weather_df_to_train['RainToday'] = weather_df_to_train['RainToday'].apply(
         lambda x: 1 if x == 'Yes' else (0 if x == 'No' else x))
 
-    weather_df_to_train['RainTomorrow'] = weather_df_to_train['RainTomorrow'].apply(
-        lambda x: 1 if x == 'Yes' else (0 if x == 'No' else x))
 
     cyclical_compass_encoder = CyclicalCompassEncoder(col='WindGustDir')
     weather_df_to_train = cyclical_compass_encoder.fit_transform(weather_df_to_train)

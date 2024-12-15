@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 
 from typing_extensions import Annotated
-from utils.data_preprocessing import data_cleaning,feature_encodings
+from utils.data_preprocessing import feature_encodings
 
 
 def load_model(model_name: str, alias: str):
@@ -46,8 +46,8 @@ def load_model(model_name: str, alias: str):
         # Load information of the ETL pipeline from S3
         s3 = boto3.client('s3')
 
-        s3.head_object(Bucket='data', Key='data_info/data.json')
-        result_s3 = s3.get_object(Bucket='data', Key='data_info/data.json')
+        s3.head_object(Bucket='data', Key='data_info/data_weather.json')
+        result_s3 = s3.get_object(Bucket='data', Key='data_info/data_weather.json')
         text_s3 = result_s3["Body"].read().decode()
         data_dictionary = json.loads(text_s3)
 
@@ -55,7 +55,7 @@ def load_model(model_name: str, alias: str):
         data_dictionary["standard_scaler_std"] = np.array(data_dictionary["standard_scaler_std"])
     except:
         # If data dictionary is not found in S3, load it from local file
-        file_s3 = open('/app/files/data.json', 'r')
+        file_s3 = open('/app/files/data_weather.json', 'r')
         data_dictionary = json.load(file_s3)
         file_s3.close()
 
@@ -303,6 +303,8 @@ def predict(
 
 
     features_df = feature_encodings(features_df)
+    features_df = features_df.astype('float64')
+
 
     features_df = (features_df-data_dict["standard_scaler_mean"])/data_dict["standard_scaler_std"]
 
@@ -311,9 +313,9 @@ def predict(
     prediction = model.predict(features_df)
 
     # Convert prediction result into string format
-    str_pred = "It Will not Rain"
+    str_pred = "It will not Rain"
     if prediction[0] > 0:
-        str_pred = "It Will Rain"
+        str_pred = "It will Rain"
 
     # Check if the model has changed asynchronously
     background_tasks.add_task(check_model)
